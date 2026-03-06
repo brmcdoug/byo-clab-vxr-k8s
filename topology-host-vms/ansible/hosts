@@ -1,0 +1,15 @@
+[localhost]
+localhost ansible_connection=local
+
+[topology-host]
+topology-host ansible_host=198.18.133.100
+
+[jalapeno]
+jalapeno ansible_host=198.18.133.102
+
+[host-vms]
+topology-host ansible_host=198.18.133.100
+jalapeno ansible_host=198.18.133.102
+
+[all:vars]
+ansible_ssh_common_args="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
