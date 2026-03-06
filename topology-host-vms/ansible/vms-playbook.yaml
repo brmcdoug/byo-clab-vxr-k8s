@@ -3,44 +3,44 @@
 # ansible-playbook -i hosts vms-playbook.yaml -e "ansible_user=cisco ansible_ssh_pass=cisco123 ansible_sudo_pass=cisco123" -vv
 
 # Host VMs Tasks
-# - name: host-vms
-#   hosts: host-vms
-#   become: true
-#   tasks:
+- name: host-vms
+  hosts: host-vms
+  become: true
+  tasks:
 
-#     - name: set timezone
-#       community.general.timezone:
-#         name: America/Los_Angeles
+    - name: set timezone
+      community.general.timezone:
+        name: America/Los_Angeles
 
-#     - name: apt update
-#       ansible.builtin.apt:
-#         update_cache: true
-#         cache_valid_time: 3600
+    - name: apt update
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-#     - name: apt upgrade
-#       ansible.builtin.apt:
-#         upgrade: dist
-#         update_cache: true
+    - name: apt upgrade
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: true
 
-# # Topology Host sudo Tasks
-# - name: topology-host tasks
-#   hosts: localhost
-#   become: true
-#   tasks:
+# Topology Host sudo Tasks
+- name: topology-host tasks
+  hosts: localhost
+  become: true
+  tasks:
 
-#     - name: set hostname
-#       ansible.builtin.hostname:
-#         name: topology-host
+    - name: set hostname
+      ansible.builtin.hostname:
+        name: topology-host
 
-#     - name: update /etc/hosts with hostname
-#       ansible.builtin.lineinfile:
-#         path: /etc/hosts
-#         regexp: '^127\.0\.1\.1'
-#         line: "127.0.1.1 topology-host"
-#         state: present
+    - name: update /etc/hosts with hostname
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1'
+        line: "127.0.1.1 topology-host"
+        state: present
 
-#     - name: install containerlab
-#       ansible.builtin.shell: "curl -sL https://containerlab.dev/setup | bash -s 'all'"
+    - name: install containerlab
+      ansible.builtin.shell: "curl -sL https://containerlab.dev/setup | bash -s 'all'"
 
 # Topology Host non-sudo Tasks
 - name: topology-host non-sudo tasks
@@ -51,6 +51,19 @@
       ansible.builtin.git:
         repo: https://github.com/srl-labs/vrnetlab.git
         dest: /home/cisco/vrnetlab    
+
+    - name: install LTRSPG-2212
+      ansible.builtin.git:
+        repo: https://github.com/cisco-asp-web/LTRSPG-2212.git
+        dest: /home/cisco/LTRSPG-2212 
+
+    - name: pull sonic-vpp docker image
+      ansible.builtin.shell: |
+        docker pull bmcdougall/sonic-vpp-ua:latest
+
+    - name: tag sonic-vpp image    
+      ansible.builtin.shell: |
+        docker tag bmcdougall/sonic-vpp-ua:latest sonic-vpp-ua:latest
 
 # Jalapeno sudo Tasks
 - name: jalapeno tasks
@@ -170,22 +183,22 @@
               hostPort: 30092
               protocol: TCP
 
-    # - name: create kind cluster with port mappings for Jalapeno NodePort services
-    #   ansible.builtin.command: kind create cluster --name jalapeno --config=/tmp/kind-config.yaml
+    - name: create kind cluster with port mappings for Jalapeno NodePort services
+      ansible.builtin.command: kind create cluster --name jalapeno --config=/tmp/kind-config.yaml
 
-    # - name: wait for kind node to be ready
-    #   ansible.builtin.command: kubectl wait --for=condition=Ready nodes --all --timeout=120s
+    - name: wait for kind node to be ready
+      ansible.builtin.command: kubectl wait --for=condition=Ready nodes --all --timeout=120s
 
-    # - name: verify kind cluster info
-    #   ansible.builtin.command: kubectl cluster-info --context kind-jalapeno
+    - name: verify kind cluster info
+      ansible.builtin.command: kubectl cluster-info --context kind-jalapeno
 
-    # - name: verify kind cluster nodes
-    #   ansible.builtin.command: kubectl get nodes
+    - name: verify kind cluster nodes
+      ansible.builtin.command: kubectl get nodes
 
     - name: Helm install Jalapeno
       ansible.builtin.command: >
         helm install jalapeno oci://ghcr.io/jalapeno/helm-charts/jalapeno
-        --version 1.0.0
+        --version 1.1.0
         --namespace jalapeno --create-namespace
         --set arangodb.persistence.data.storageClass=standard
         --set arangodb.persistence.appdata.storageClass=standard
