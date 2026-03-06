@@ -173,6 +173,9 @@
     - name: create kind cluster with port mappings for Jalapeno NodePort services
       ansible.builtin.command: kind create cluster --name jalapeno --config=/tmp/kind-config.yaml
 
+    - name: wait for kind node to be ready
+      ansible.builtin.command: kubectl wait --for=condition=Ready nodes --all --timeout=120s
+
     - name: verify kind cluster info
       ansible.builtin.command: kubectl cluster-info --context kind-jalapeno
 
@@ -183,5 +186,5 @@
       ansible.builtin.command: >
         helm install jalapeno charts/jalapeno
         -f charts/jalapeno/values-kind.yaml
-        --namespace jalapeno --create-namespace
+        --version 1.0.0 --namespace jalapeno --create-namespace
 
