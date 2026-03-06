@@ -1,6 +1,6 @@
 ---
 
-# ansible-playbook -i hosts host-vms-playbook.yaml -e "ansible_user=cisco ansible_ssh_pass=cisco123 ansible_sudo_pass=cisco123" -vv
+# ansible-playbook -i hosts vms-playbook.yaml -e "ansible_user=cisco ansible_ssh_pass=cisco123 ansible_sudo_pass=cisco123" -vv
 
 # Host VMs Tasks
 - name: host-vms

@@ -18,21 +18,38 @@ A short guide to building your own Containerlab + VXR + K8s lab (or reproducing 
 ```
 sudo apt update && sudo apt upgrade
 ```
-2. Install Containerlab: 
+
+2. Install python3-pip
+```
+sudo apt install python3-pip
+```
+
+3. Install Ansible
+```
+python3 -m pip install --user ansible
+```
+
+4. Run Ansible *`vms-playbook`*
+```
+cd 
+
+```
+
+5. Install Containerlab: 
 
    https://containerlab.dev/install/
    
-3. Install the containerlab fork of *`vrnetlab`*:
+6. Install the containerlab fork of *`vrnetlab`*:
 
    ```
    git clone https://github.com/srl-labs/vrnetlab
    ```
 
-4. Install VXR (contact Cisco account team for image download access): 
+7. Install VXR (contact Cisco account team for image download access): 
 
    https://www.cisco.com/c/en/us/td/docs/iosxr/cisco8000-emulator/cisco8000-hardware-emulator-installation-guide.html
 
-5. Download/Acquire XRd image(s) - choose XRd Control Plane option: 
+8. Download/Acquire XRd image(s) - choose XRd Control Plane option: 
 
    https://www.cisco.com/c/en/us/support/routers/ios-xrd/series.html#~tab-downloads 
 
