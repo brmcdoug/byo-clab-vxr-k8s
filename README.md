@@ -1,5 +1,43 @@
-## vxr8000
+# BYO-CLAB-VXR-K8s-Lab
 
-This repository contains instructions and sample yaml files and router configurations for building and launching Cisco vxr8000 (virtualized Cisco 8000) network topologies.
+A short guide to building your own Containerlab + VXR + K8s lab (or reproducing Cisco Live Lab LTRSPG-2212) in your own lab or in the cloud
 
-Instructions include launching both regular IOS-XR vxr instances and SONiC vxr instances via Docker and Containerlab
+## Contents
+* Lab Hosts [LINK](#lab-hosts)
+* Topology Host[LINK](#topology-host)
+
+
+## Lab Hosts
+
+* Topology Host: Ubuntu (22.04 or 24.04) VM or server: we recommend 32 vCPU, 96GB RAM, 200GB disk
+* Jalapeno Host: Ubuntu VM or server with Kubernetes (Kind or Kubeadm)
+
+## Topology Host
+
+1. Apt update/upgrade
+```
+sudo apt update && sudo apt upgrade
+```
+2. Install Containerlab: 
+
+   https://containerlab.dev/install/
+   
+3. Install the containerlab fork of *`vrnetlab`*:
+
+   ```
+   git clone https://github.com/srl-labs/vrnetlab
+   ```
+
+4. Install VXR (contact Cisco account team for image download access): 
+
+   https://www.cisco.com/c/en/us/td/docs/iosxr/cisco8000-emulator/cisco8000-hardware-emulator-installation-guide.html
+
+5. Download/Acquire XRd image(s) - choose XRd Control Plane option: 
+
+   https://www.cisco.com/c/en/us/support/routers/ios-xrd/series.html#~tab-downloads 
+
+
+
+
+
+

@@ -1,0 +1,51 @@
+---
+# Join worker nodes to an existing cluster (run after k8s-install-playbook or when adding new workers).
+# Run from the ansible/ directory:
+#   ansible-playbook -i hosts k8s-join-workers.yaml
+
+- name: Get kubeadm join command from control plane
+  hosts: k8s-cp
+  become: true
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+  tasks:
+    - name: Check that cluster is initialized
+      ansible.builtin.stat:
+        path: "{{ kubeconfig }}"
+      register: kubeconfig_stat
+      failed_when: not kubeconfig_stat.stat.exists
+
+    - name: Get kubeadm join command
+      ansible.builtin.command: "kubeadm token create --print-join-command"
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      register: kubeadm_join_result
+      changed_when: false
+
+    - name: Store join command for worker play
+      ansible.builtin.set_fact:
+        kubeadm_join_command: "{{ kubeadm_join_result.stdout }}"
+
+- name: Join worker nodes to the cluster
+  hosts: k8s-workers
+  become: true
+  tasks:
+    - name: Check if node already joined
+      ansible.builtin.stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf_stat
+
+    - name: Join node to Kubernetes cluster
+      ansible.builtin.shell: "{{ hostvars[groups['k8s-cp'][0]]['kubeadm_join_command'] }}"
+      when:
+        - not kubelet_conf_stat.stat.exists
+        - hostvars[groups['k8s-cp'][0]]['kubeadm_join_command'] is defined
+      register: join_result
+      changed_when: join_result.rc == 0
+
+    - name: Wait for node to be ready (if just joined)
+      ansible.builtin.wait_for:
+        path: /etc/kubernetes/kubelet.conf
+        state: present
+        timeout: 120
+      when: join_result is changed

@@ -1,0 +1,3 @@
+# Control plane vars (e.g. Cilium CLI version can be overridden)
+# Cilium CLI version is fetched at runtime from stable.txt; override here if needed
+# cilium_cli_version: "v0.16.0"

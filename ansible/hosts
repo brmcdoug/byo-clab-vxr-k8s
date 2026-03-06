@@ -1,0 +1,13 @@
+# Optional: use this when running playbooks on the same machine as the control plane
+[local]
+localhost ansible_connection=local
+
+[k8s-nodes]
+jalapeno-1 ansible_host=198.18.201.39
+jalapeno-2 ansible_host=198.18.201.40
+
+[k8s-cp]
+jalapeno-1 ansible_host=198.18.201.39
+
+[k8s-workers]
+jalapeno-2 ansible_host=198.18.201.40

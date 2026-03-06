@@ -1,0 +1,13 @@
+# Versions and URLs - single place to upgrade k8s, containerd, runc
+k8s_apt_version: "v1.35"
+k8s_apt_repo: "https://pkgs.k8s.io/core:/stable:/{{ k8s_apt_version }}/deb/"
+containerd_version: "1.7.27"
+runc_version: "1.2.6"
+timezone: "America/New_York"
+
+# Sysctl settings for Kubernetes
+k8s_sysctl_settings:
+  net.bridge.bridge-nf-call-ip6tables: 1
+  net.bridge.bridge-nf-call-iptables: 1
+  net.ipv4.ip_forward: 1
+  net.ipv6.conf.all.forwarding: 1

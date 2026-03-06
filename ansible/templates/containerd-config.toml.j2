@@ -1,0 +1,5 @@
+# Minimal containerd config for Kubernetes (systemd cgroup driver)
+version = 2
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+  SystemdCgroup = true

@@ -1,0 +1,30 @@
+---
+
+  # ansible-playbook -i hosts sonic-playbook.yaml -e "ansible_user=cisco ansible_ssh_pass=cisco123 ansible_sudo_pass=cisco123" -vv
+
+- name: apt update and upgrade
+  hosts: localhost
+  become: true
+  tasks:
+
+    - name: apt update
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: apt upgrade
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: true
+
+    - name: install containerlab  
+      command: "curl -sL https://containerlab.dev/setup | sudo -E bash -s 'all'"
+
+    - name: install vrnetlab
+      command: "git clone https://github.com/srl-labs/vrnetlab.git"
+
+
+
+
+
+

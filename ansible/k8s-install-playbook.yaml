@@ -1,0 +1,310 @@
+---
+# Kubernetes + Cilium install playbook (small cluster)
+# Run from the ansible/ directory:
+#   ansible-playbook -i hosts k8s-install-playbook.yaml \
+#     -e "ansible_user=localadmin ansible_ssh_pass=... ansible_sudo_pass=..." -vv
+#
+# Versions: edit group_vars/k8s-nodes.yaml (k8s_apt_version, containerd_version, runc_version).
+# Containerd config: ansible/containerd-config.toml is copied to nodes.
+
+- name: Prepare and install k8s node components
+  hosts: k8s-nodes
+  become: true
+  # group_vars/k8s-nodes.yaml is loaded automatically for hosts: k8s-nodes
+  handlers:
+    - name: restart containerd
+      ansible.builtin.systemd:
+        name: containerd
+        state: restarted
+        daemon_reload: true
+  tasks:
+    - name: Set timezone
+      ansible.builtin.command: "timedatectl set-timezone {{ timezone }}"
+      register: tz_result
+      changed_when: tz_result.rc == 0
+
+    - name: Disable swap (turn off)
+      ansible.builtin.command: "swapoff -a"
+      ignore_errors: true  # no swap is ok
+
+    - name: Remove swap image if present
+      ansible.builtin.file:
+        path: /swap.img
+        state: absent
+      ignore_errors: true
+
+    - name: Remove swap entries from fstab
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^[^#]*\bswap\b.*'
+        replace: ''
+      ignore_errors: true
+
+    - name: Ensure apt cache is updated
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - bridge-utils
+          - curl
+          - apt-transport-https
+          - ca-certificates
+        state: present
+
+    - name: Ensure apt keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Download Kubernetes apt signing key
+      ansible.builtin.get_url:
+        url: "{{ k8s_apt_repo }}Release.key"
+        dest: /tmp/kubernetes-apt-key.asc
+        mode: "0644"
+        force: true
+
+    - name: Add Kubernetes apt key (dearmor)
+      ansible.builtin.shell: |
+        gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg < /tmp/kubernetes-apt-key.asc
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    - name: Add Kubernetes apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] {{ k8s_apt_repo }} /"
+        filename: kubernetes
+        state: present
+        update_cache: true
+
+    - name: Load overlay and br_netfilter modules
+      ansible.builtin.command: "modprobe {{ item }}"
+      loop:
+        - overlay
+        - br_netfilter
+      changed_when: false
+
+    - name: Set Kubernetes sysctl parameters
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.d/99-kubernetes.conf
+        line: "{{ item.key }} = {{ item.value }}"
+        create: true
+        backup: true
+      loop: "{{ k8s_sysctl_settings | dict2items }}"
+
+    - name: Apply sysctl
+      ansible.builtin.command: "sysctl --system"
+      changed_when: false
+
+    # --- containerd (before kubelet so CRI is ready) ---
+    - name: Download containerd tarball
+      ansible.builtin.get_url:
+        url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+        dest: "/tmp/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+        mode: "0644"
+        force: true
+
+    - name: Unarchive containerd
+      ansible.builtin.unarchive:
+        src: "/tmp/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+        dest: /usr/local
+        remote_src: true
+        creates: /usr/local/bin/containerd
+
+    - name: Download containerd systemd service
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/containerd/containerd/main/containerd.service"
+        dest: /etc/systemd/system/containerd.service
+        mode: "0644"
+        force: true
+
+    - name: Ensure /etc/containerd exists
+      ansible.builtin.file:
+        path: /etc/containerd
+        state: directory
+        mode: "0755"
+
+    - name: Deploy containerd config
+      ansible.builtin.copy:
+        src: containerd-config.toml
+        dest: /etc/containerd/config.toml
+        mode: "0644"
+      notify: restart containerd
+
+    - name: Enable and start containerd
+      ansible.builtin.systemd:
+        name: containerd
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Download runc binary
+      ansible.builtin.get_url:
+        url: "https://github.com/opencontainers/runc/releases/download/v{{ runc_version }}/runc.amd64"
+        dest: "/tmp/runc.amd64"
+        mode: "0755"
+        force: true
+
+    - name: Install runc
+      ansible.builtin.copy:
+        src: "/tmp/runc.amd64"
+        dest: /usr/local/sbin/runc
+        mode: "0755"
+        remote_src: true
+        force: true
+
+    - name: Install kubectl kubeadm kubelet
+      ansible.builtin.apt:
+        name:
+          - kubectl
+          - kubeadm
+          - kubelet
+        state: present
+        update_cache: true
+
+    - name: Hold kubeadm kubelet kubectl at current version
+      ansible.builtin.command: "apt-mark hold kubeadm kubelet kubectl"
+      changed_when: false
+
+    - name: Enable and start kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: started
+        enabled: true
+
+- name: Initialize cluster and install Cilium on control plane
+  hosts: k8s-cp
+  become: true
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+  tasks:
+    - name: Check if cluster already initialized
+      ansible.builtin.stat:
+        path: "{{ kubeconfig }}"
+      register: kubeconfig_stat
+
+    - name: Initialize Kubernetes cluster
+      ansible.builtin.command: "kubeadm init"
+      when: not kubeconfig_stat.stat.exists
+      register: kubeadm_init
+      changed_when: kubeadm_init.rc == 0
+
+    - name: Ensure cluster is ready (re-check so Cilium runs after init)
+      ansible.builtin.stat:
+        path: "{{ kubeconfig }}"
+      register: kubeconfig_ready
+
+    - name: Set kubeconfig for subsequent tasks
+      ansible.builtin.set_fact:
+        kubeconfig_env:
+          KUBECONFIG: "{{ kubeconfig }}"
+      when: kubeconfig_ready.stat.exists
+
+    - name: Get SSH user home directory (so .kube is in the right place under become)
+      ansible.builtin.command: "getent passwd {{ ansible_user }} | cut -d: -f6"
+      register: ssh_user_home_result
+      changed_when: false
+      when: kubeconfig_ready.stat.exists
+
+    - name: Ensure .kube directory exists for SSH user
+      ansible.builtin.file:
+        path: "{{ ssh_user_home_result.stdout }}/.kube"
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      when: kubeconfig_ready.stat.exists and ssh_user_home_result.stdout | length > 0
+
+    - name: Copy admin kubeconfig to user .kube/config
+      ansible.builtin.copy:
+        src: "{{ kubeconfig }}"
+        dest: "{{ ssh_user_home_result.stdout }}/.kube/config"
+        remote_src: true
+        mode: "0600"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      when: kubeconfig_ready.stat.exists and ssh_user_home_result.stdout | length > 0
+
+    - name: Untaint control plane node (allow workloads)
+      ansible.builtin.command: "kubectl taint nodes --all node-role.kubernetes.io/control-plane-"
+      environment: "{{ kubeconfig_env }}"
+      when: kubeconfig_ready.stat.exists
+      ignore_errors: true  # idempotent; no taint is ok
+
+    - name: Fetch Cilium CLI version
+      ansible.builtin.uri:
+        url: "https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt"
+        return_content: true
+      register: cilium_version_result
+      when: kubeconfig_ready.stat.exists
+      run_once: true
+
+    - name: Set Cilium CLI version
+      ansible.builtin.set_fact:
+        cilium_cli_version: "{{ (cilium_version_result.content | default('v0.16.0')) | trim }}"
+      when: kubeconfig_ready.stat.exists and cilium_version_result is defined
+
+    - name: Install Cilium CLI
+      ansible.builtin.shell: |
+        set -e
+        CLI_ARCH=amd64
+        [ "$(uname -m)" = "aarch64" ] && CLI_ARCH=arm64
+        curl -L --fail --remote-name-all "https://github.com/cilium/cilium-cli/releases/download/{{ cilium_cli_version }}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}"
+        sha256sum --check "cilium-linux-${CLI_ARCH}.tar.gz.sha256sum"
+        tar xzvf "cilium-linux-${CLI_ARCH}.tar.gz" -C /usr/local/bin
+        rm -f "cilium-linux-${CLI_ARCH}.tar.gz" "cilium-linux-${CLI_ARCH}.tar.gz.sha256sum"
+      args:
+        creates: /usr/local/bin/cilium
+      when: kubeconfig_ready.stat.exists and cilium_cli_version is defined
+
+    - name: Install Cilium in cluster
+      ansible.builtin.command: "cilium install"
+      environment: "{{ kubeconfig_env }}"
+      when: kubeconfig_ready.stat.exists
+      register: cilium_install
+      changed_when: cilium_install.rc == 0
+
+    - name: Verify Cilium status
+      ansible.builtin.command: "cilium status"
+      environment: "{{ kubeconfig_env }}"
+      when: kubeconfig_ready.stat.exists
+      changed_when: false
+
+    - name: Get kubeadm join command for workers
+      ansible.builtin.command: "kubeadm token create --print-join-command"
+      environment: "{{ kubeconfig_env }}"
+      when: kubeconfig_ready.stat.exists
+      register: kubeadm_join_result
+      changed_when: false
+
+    - name: Store join command for worker play
+      ansible.builtin.set_fact:
+        kubeadm_join_command: "{{ kubeadm_join_result.stdout }}"
+      when: kubeconfig_ready.stat.exists and kubeadm_join_result.stdout is defined
+
+- name: Join worker nodes to the cluster
+  hosts: k8s-workers
+  become: true
+  tasks:
+    - name: Check if node already joined
+      ansible.builtin.stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf_stat
+
+    - name: Join node to Kubernetes cluster
+      ansible.builtin.shell: "{{ hostvars[groups['k8s-cp'][0]]['kubeadm_join_command'] }}"
+      when:
+        - not kubelet_conf_stat.stat.exists
+        - hostvars[groups['k8s-cp'][0]]['kubeadm_join_command'] is defined
+      register: join_result
+      changed_when: join_result.rc == 0
+
+    - name: Wait for node to be ready (if just joined)
+      ansible.builtin.wait_for:
+        path: /etc/kubernetes/kubelet.conf
+        state: present
+        timeout: 120
+      when: not kubelet_conf_stat.stat.exists and join_result is changed
