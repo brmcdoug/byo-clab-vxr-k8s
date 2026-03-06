@@ -3,51 +3,56 @@
 # ansible-playbook -i hosts vms-playbook.yaml -e "ansible_user=cisco ansible_ssh_pass=cisco123 ansible_sudo_pass=cisco123" -vv
 
 # Host VMs Tasks
-- name: host-vms
-  hosts: host-vms
-  become: true
-  tasks:
+# - name: host-vms
+#   hosts: host-vms
+#   become: true
+#   tasks:
 
-    - name: set timezone
-      community.general.timezone:
-        name: America/Los_Angeles
+#     - name: set timezone
+#       community.general.timezone:
+#         name: America/Los_Angeles
 
-    - name: apt update
-      ansible.builtin.apt:
-        update_cache: true
-        cache_valid_time: 3600
+#     - name: apt update
+#       ansible.builtin.apt:
+#         update_cache: true
+#         cache_valid_time: 3600
 
-    - name: apt upgrade
-      ansible.builtin.apt:
-        upgrade: dist
-        update_cache: true
+#     - name: apt upgrade
+#       ansible.builtin.apt:
+#         upgrade: dist
+#         update_cache: true
 
-# Topology Host Tasks
-- name: topology-host tasks
+# # Topology Host sudo Tasks
+# - name: topology-host tasks
+#   hosts: localhost
+#   become: true
+#   tasks:
+
+#     - name: set hostname
+#       ansible.builtin.hostname:
+#         name: topology-host
+
+#     - name: update /etc/hosts with hostname
+#       ansible.builtin.lineinfile:
+#         path: /etc/hosts
+#         regexp: '^127\.0\.1\.1'
+#         line: "127.0.1.1 topology-host"
+#         state: present
+
+#     - name: install containerlab
+#       ansible.builtin.shell: "curl -sL https://containerlab.dev/setup | bash -s 'all'"
+
+# Topology Host non-sudo Tasks
+- name: topology-host non-sudo tasks
   hosts: localhost
-  become: true
   tasks:
-
-    - name: set hostname
-      ansible.builtin.hostname:
-        name: topology-host
-
-    - name: update /etc/hosts with hostname
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        regexp: '^127\.0\.1\.1'
-        line: "127.0.1.1 topology-host"
-        state: present
-
-    - name: install containerlab
-      ansible.builtin.shell: "curl -sL https://containerlab.dev/setup | bash -s 'all'"
 
     - name: install vrnetlab
       ansible.builtin.git:
         repo: https://github.com/srl-labs/vrnetlab.git
-        dest: /opt/vrnetlab
+        dest: /home/cisco/vrnetlab    
 
-# Jalapeno VM Tasks
+# Jalapeno sudo Tasks
 - name: jalapeno tasks
   hosts: jalapeno
   become: true
@@ -64,22 +69,30 @@
         state: present
 
     - name: install kind
-      ansible.builtin.get_url:
-        url: https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
-        dest: /usr/local/bin/kind
-        mode: '0755'
-
-    - name: get latest kubectl version
-      ansible.builtin.uri:
-        url: https://dl.k8s.io/release/stable.txt
-        return_content: true
-      register: kubectl_version
+      ansible.builtin.shell: |
+        curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
+        chmod 755 /usr/local/bin/kind
+      args:
+        creates: /usr/local/bin/kind
 
     - name: install kubectl
-      ansible.builtin.get_url:
-        url: "https://dl.k8s.io/release/{{ kubectl_version.content | trim }}/bin/linux/amd64/kubectl"
-        dest: /usr/local/bin/kubectl
-        mode: '0755'
+      ansible.builtin.shell: |
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod 755 kubectl
+        mv kubectl /usr/local/bin/kubectl
+      args:
+        creates: /usr/local/bin/kubectl
+
+    - name: install Helm
+      ansible.builtin.shell: |
+        curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        chmod 700 /tmp/get_helm.sh
+        /tmp/get_helm.sh
+
+# Jalapeno non-sudo Tasks
+- name: jalapeno non-sudo tasks
+  hosts: jalapeno
+  tasks:
 
     - name: write kind cluster config
       ansible.builtin.copy:
@@ -114,12 +127,6 @@
 
     - name: verify kind cluster nodes
       ansible.builtin.command: kubectl get nodes
-
-    - name: install Helm
-      ansible.builtin.shell: |
-        curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-        chmod 700 /tmp/get_helm.sh
-        /tmp/get_helm.sh
 
     - name: Helm install Jalapeno
       ansible.builtin.command: >
