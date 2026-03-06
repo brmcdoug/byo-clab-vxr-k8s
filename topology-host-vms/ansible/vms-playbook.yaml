@@ -110,6 +110,9 @@
         groups: docker
         append: true
 
+    - name: reset ssh connection for group change
+      ansible.builtin.meta: reset_connection
+
     - name: ensure docker is running
       ansible.builtin.systemd:
         name: docker
