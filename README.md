@@ -26,12 +26,14 @@ sudo apt install python3-pip
 
 3. Install Ansible
 ```
-python3 -m pip install --user ansible
+sudo apt install software-properties-common
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+sudo apt install ansible
 ```
 
 4. Run Ansible *`vms-playbook`*
 ```
-cd 
+cd topology-host-vms/ansible/
 
 ```
 
