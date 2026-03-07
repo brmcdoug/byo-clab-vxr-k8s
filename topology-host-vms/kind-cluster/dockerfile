@@ -1,0 +1,29 @@
+# Use the official Kind node image as a base to get the K8s binaries,
+# but we can customize it or build from Ubuntu 22.04.
+FROM kindest/node:v1.28.0
+
+# Install additional tools for SRv6, Scapy support, and debugging
+RUN apt-get update && apt-get install -y \
+    iproute2 \
+    net-tools \
+    iputils-ping \
+    tcpdump \
+    conntrack \
+    socat \
+    ethtool \
+    kmod \
+    pciutils \
+    python3 \
+    python3-pip \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Scapy for local packet injection tests
+RUN pip3 install scapy
+
+# Install Helm (Latest version) via official script
+# This script detects architecture and installs the binary to /usr/local/bin/helm
+RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# Ensure the node can handle Cilium/Multus CNI binaries
+RUN mkdir -p /opt/cni/bin

@@ -1,0 +1,67 @@
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentVRF
+metadata:
+  name: carrots
+spec:
+  vrfID: 99
+  locatorPoolRef: pool0
+  rules:
+  - selectors:
+    - endpointSelector:
+        matchLabels:
+          vrf: carrots
+    destinationCIDRs:
+    - 0.0.0.0/0
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentBGPVRFConfig
+metadata:
+  name: carrots-config
+spec:
+  families:
+    - afi: ipv4
+      safi: mpls_vpn
+      advertisements:
+        matchLabels:
+          advertise: "bgp-carrots"
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentBGPAdvertisement
+metadata:
+  name: carrots-adverts
+  labels:
+    advertise: bgp-carrots
+spec:
+  advertisements:
+    - advertisementType: "PodCIDR"
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: veggies
+  labels:
+    name: veggies
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: veggies
+  labels:
+    app: alpine-ping
+    vrf: carrots
+  name: carrots0
+spec:
+  nodeName: london-vm-02
+  containers:
+  - image: alpine:latest
+    imagePullPolicy: IfNotPresent
+    name: carrots0
+    command:
+      - /bin/sh
+      - "-c"
+      - "sleep 60m"

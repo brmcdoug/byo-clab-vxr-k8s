@@ -1,0 +1,195 @@
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentBGPClusterConfig
+metadata:
+  name: cilium-bgp
+spec:
+  nodeSelector:
+    matchExpressions:
+    - key: kubernetes.io/hostname
+      operator: In
+      values:
+      - london-vm-00
+      - london-vm-01
+      - london-vm-02
+  bgpInstances:
+  - name: "asn65000"
+    localASN: 65000
+    peers:
+    - name: "paris-rr"
+      peerASN: 65000
+      peerAddress: fc00:0:5555::1
+      peerConfigRef:
+        name: "cilium-peer"
+    - name: "barcelona-rr"
+      peerASN: 65000
+      peerAddress: fc00:0:6666::1
+      peerConfigRef:
+        name: "cilium-peer"
+    vrfs:
+    - vrfRef: "carrots"
+      rd: "9:9"
+      importRTs:
+        - "9:9"
+      exportRTs:
+        - "9:9"
+      configRef: carrots-config
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentBGPPeerConfig
+metadata:
+  name: cilium-peer
+spec:
+  families:
+    - afi: ipv6
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: "bgpv6unicast"
+    - afi: ipv4
+      safi: mpls_vpn
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentBGPNodeConfigOverride
+metadata:
+  name: london-vm-00
+spec:
+  bgpInstances:
+    - name: "asn65000"
+      srv6Responder: true
+      peers:
+        - name: "paris-rr"
+          localAddress: fc00:0:800::2
+        - name: "barcelona-rr"
+          localAddress: fc00:0:800::2
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentBGPNodeConfigOverride
+metadata:
+  name: london-vm-01
+spec:
+  bgpInstances:
+    - name: "asn65000"
+      srv6Responder: true
+      peers:
+        - name: "paris-rr"
+          localAddress: fc00:0:800:1::2
+        - name: "barcelona-rr"
+          localAddress: fc00:0:800:1::2
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentBGPNodeConfigOverride
+metadata:
+  name: london-vm-02
+spec:
+  bgpInstances:
+    - name: "asn65000"
+      srv6Responder: true
+      peers:
+        - name: "paris-rr"
+          localAddress: fc00:0:800:2::2
+        - name: "barcelona-rr"
+          localAddress: fc00:0:800:2::2
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentBGPAdvertisement
+metadata:
+  name: bgp-ipv6-unicast
+  labels:
+    advertise: bgpv6unicast
+spec:
+  advertisements:
+    - advertisementType: "SRv6LocatorPool"
+      selector:
+        matchLabels:
+          export: "pool0"
+    - advertisementType: "PodCIDR"
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentSRv6LocatorPool
+metadata:
+  name: pool0
+  labels:
+    export: "pool0"
+spec:
+  behaviorType: uSID
+  prefix: fc00:0:8800::/40
+  structure:
+    locatorBlockLenBits: 32
+    locatorNodeLenBits: 16
+    functionLenBits: 16
+    argumentLenBits: 0
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentVRF
+metadata:
+  name: carrots
+spec:
+  vrfID: 99
+  locatorPoolRef: pool0
+  rules:
+  - selectors:
+    - endpointSelector:
+        matchLabels:
+          vrf: carrots
+    destinationCIDRs:
+    - 0.0.0.0/0
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentBGPVRFConfig
+metadata:
+  name: carrots-config
+spec:
+  families:
+    - afi: ipv4
+      safi: mpls_vpn
+      advertisements:
+        matchLabels:
+          advertise: "bgp-carrots"
+
+---
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentBGPAdvertisement
+metadata:
+  name: carrots-adverts
+  labels:
+    advertise: bgp-carrots
+spec:
+  advertisements:
+    - advertisementType: "PodCIDR"
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: veggies
+  labels:
+    name: veggies
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: veggies
+  labels:
+    app: alpine-ping
+    vrf: carrots
+  name: carrots0
+spec:
+  nodeName: london-vm-01
+  containers:
+  - image: alpine:latest
+    imagePullPolicy: IfNotPresent
+    name: carrots0
+    command:
+      - /bin/sh
+      - "-c"
+      - "sleep 60m"

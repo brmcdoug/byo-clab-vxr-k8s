@@ -1,16 +1,12 @@
 # BYO-CLAB-VXR-K8s-Lab
 
-A short guide to building your own Containerlab + VXR + K8s lab (or reproducing Cisco Live Lab LTRSPG-2212) in your own lab or in the cloud
-
-## Contents
-* Lab Hosts [LINK](#lab-hosts)
-* Topology Host[LINK](#topology-host)
+A short guide to building your own Containerlab + VXR + K8s lab (or reproducing Cisco Live Lab LTRSPG-2212) in your own environment or in the cloud
 
 
 ## Lab Hosts
 
 * Topology Host: Ubuntu (22.04 or 24.04) VM or server: we recommend 32 vCPU, 96GB RAM, 200GB disk
-* Jalapeno Host: Ubuntu VM or server with Kubernetes (Kind or Kubeadm)
+* Jalapeno Host: Ubuntu (22.04 or 24.04) VM or server: we recommend 4 vCPU, 16GB RAM, 80GB disk
 
 **First Step** - update [hosts](./topology-host-vms/ansible/hosts) ip addresses and playbook user/pw info to suit your env
 
@@ -21,9 +17,9 @@ A short guide to building your own Containerlab + VXR + K8s lab (or reproducing 
 sudo apt update && sudo apt upgrade
 ```
 
-2. Install python3-pip
+2. Install python3-pip and sshpass
 ```
-sudo apt install python3-pip
+sudo apt install python3-pip sudo sshpass
 ```
 
 3. Install Ansible
@@ -76,7 +72,7 @@ tar -xvf 8000-sonic-eft16.0.tar
 ```
 cd 8000-eft16.0/scripts/
 
-
+sudo ./ubuntuServerManualSetup.sh 
 ```
 
 

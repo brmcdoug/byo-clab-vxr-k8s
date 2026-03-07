@@ -1,0 +1,15 @@
+apiVersion: isovalent.com/v1alpha1
+kind: IsovalentSRv6EgressPolicy
+
+metadata:
+  name: bgp-control-plane-ccfdba53ce451932881088eb5f0abbbaf4fdded016decb099155e18656baddba 
+
+spec:
+  destinationCIDRs:
+  - 10.107.1.0/24
+
+  #destinationSID: 'fc00:0:7777:e007::' # original SID received from BGP vpnv4
+  destinationSID: 'fc00:0:3333:4444:7777:e007::' # TE path thru router 3 and 4 on the way to router 7 vpnv4 e005
+  vrfID: 99
+
+  
