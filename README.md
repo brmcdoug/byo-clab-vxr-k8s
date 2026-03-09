@@ -86,7 +86,15 @@ sudo ./ubuntuServerManualSetup.sh
    https://www.cisco.com/c/en/us/support/routers/ios-xrd/series.html#~tab-downloads 
 
 
+12. untar XRd image
+```
+tar -xvf xrd-control-plane-container-x86.<xyz-release>.tgz
+```
 
+13. Load XRd image
+```
+docker load -i xrd-control-plane-container-x64.dockerv1.tgz
+```
 
 
 
