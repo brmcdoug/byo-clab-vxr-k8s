@@ -54,7 +54,7 @@ topology:
 
     app-container-rome:
       kind: linux
-      image: iejalapeno/alpine-srv6:latest
+      image: iejalapeno/alpine-srv6:1.0
       mgmt-ipv4: 172.20.6.109
       cap-add:
         - NET_ADMIN
@@ -64,7 +64,7 @@ topology:
 
     app-container-london:
       kind: linux
-      image: iejalapeno/alpine-srv6:latest
+      image: iejalapeno/alpine-srv6:1.0
       mgmt-ipv4: 172.20.6.108
       cap-add:
         - NET_ADMIN
