@@ -12,43 +12,43 @@ topology:
 # XRd Core Network
     xrd-london:
       kind: cisco_xrd
-      image: cisco-xrd-control-plane:25.4.1
+      image: ios-xr/xrd-control-plane:25.4.1
       startup-config: xrd-config/london.cfg
       mgmt-ipv4: 172.20.6.101
       
     xrd-amsterdam:
       kind: cisco_xrd
-      image: cisco-xrd-control-plane:25.4.1
+      image: ios-xr/xrd-control-plane:25.4.1
       startup-config: xrd-config/amsterdam.cfg
       mgmt-ipv4: 172.20.6.102
 
     xrd-berlin:
       kind: cisco_xrd
-      image: cisco-xrd-control-plane:25.4.1
+      image: ios-xr/xrd-control-plane:25.4.1
       startup-config: xrd-config/berlin.cfg
       mgmt-ipv4: 172.20.6.103
 
     xrd-zurich:
       kind: cisco_xrd
-      image: cisco-xrd-control-plane:25.4.1
+      image: ios-xr/xrd-control-plane:25.4.1
       startup-config: xrd-config/zurich.cfg
       mgmt-ipv4: 172.20.6.104
 
     xrd-paris:
       kind: cisco_xrd
-      image: cisco-xrd-control-plane:25.4.1
+      image: ios-xr/xrd-control-plane:25.4.1
       startup-config: xrd-config/paris.cfg
       mgmt-ipv4: 172.20.6.105
 
     xrd-barcelona:
       kind: cisco_xrd
-      image: cisco-xrd-control-plane:25.4.1
+      image: ios-xr/xrd-control-plane:25.4.1
       startup-config: xrd-config/barcelona.cfg
       mgmt-ipv4: 172.20.6.106
 
     xrd-rome:
       kind: cisco_xrd
-      image: cisco-xrd-control-plane:25.4.1
+      image: ios-xr/xrd-control-plane:25.4.1
       startup-config: xrd-config/rome.cfg
       mgmt-ipv4: 172.20.6.107
 
