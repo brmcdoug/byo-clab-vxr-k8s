@@ -100,7 +100,7 @@
       ansible.builtin.command: docker tag bmcdougall/sonic-vpp-ua:latest sonic-vpp-ua:latest
 
     - name: pull alping-srv6 image
-      ansible.builtin.command: docker pull iejalapeno/alpine-srv6:latest
+      ansible.builtin.command: docker pull iejalapeno/alpine-srv6:1.0
 
     - name: create custom kind node image
       ansible.builtin.command: docker build -t custom-kind-node:v1.28.0 .
