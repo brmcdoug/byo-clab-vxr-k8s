@@ -93,6 +93,24 @@
     - name: install containerlab
       ansible.builtin.shell: "curl -sL https://containerlab.dev/setup | bash -s 'all'"
 
+    - name: pull sonic-vpp docker image
+      ansible.builtin.command: docker pull bmcdougall/sonic-vpp-ua:latest
+
+    - name: tag sonic-vpp image
+      ansible.builtin.command: docker tag bmcdougall/sonic-vpp-ua:latest sonic-vpp-ua:latest
+
+    - name: create custom kind node image
+      ansible.builtin.command: docker build -t custom-kind-node:v1.28.0 .
+      args:
+        chdir: /home/cisco/byo-clab-vxr-k8s/topology-host-vms/kind-cluster
+
+    - name: display docker images
+      ansible.builtin.command: docker image ls
+      register: docker_images
+
+    - name: show docker images
+      ansible.builtin.debug:
+
 # Topology Host non-sudo Tasks
 - name: topology-host non-sudo tasks
   hosts: localhost
@@ -106,27 +124,7 @@
     - name: install LTRSPG-2212
       ansible.builtin.git:
         repo: https://github.com/cisco-asp-web/LTRSPG-2212.git
-        dest: /home/cisco/LTRSPG-2212 
-
-    - name: pull sonic-vpp docker image
-      ansible.builtin.shell: |
-        docker pull bmcdougall/sonic-vpp-ua:latest
-
-    - name: tag sonic-vpp image    
-      ansible.builtin.shell: |
-        docker tag bmcdougall/sonic-vpp-ua:latest sonic-vpp-ua:latest
-
-    - name: create custom kind node image
-      ansible.builtin.command: docker build -t custom-kind-node:v1.28.0 .
-      args:
-        chdir: /home/cisco/byo-clab-vxr-k8s/topology-host-vms/kind-cluster
-
-    - name: display docker images
-      ansible.builtin.command: docker image ls
-      register: docker_images
-
-    - name: show docker images
-      ansible.builtin.debug:
+        dest: /home/cisco/LTRSPG-2212
         var: docker_images.stdout_lines
 
     # - name: deploy containerlab topology
