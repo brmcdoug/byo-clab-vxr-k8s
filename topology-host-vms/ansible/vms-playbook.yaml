@@ -99,6 +99,9 @@
     - name: tag sonic-vpp image
       ansible.builtin.command: docker tag bmcdougall/sonic-vpp-ua:latest sonic-vpp-ua:latest
 
+    - name: pull alping-srv6 image
+      ansible.builtin.command: docker pull iejalapeno/alpine-srv6:latest
+
     - name: create custom kind node image
       ansible.builtin.command: docker build -t custom-kind-node:v1.28.0 .
       args:
@@ -127,10 +130,10 @@
         dest: /home/cisco/LTRSPG-2212
         var: docker_images.stdout_lines
 
-    # - name: deploy containerlab topology
-    #   ansible.builtin.command: containerlab deploy -t lab_3-topology.clab.yaml
-    #   args:
-    #     chdir: /home/cisco/byo-clab-vxr-k8s/clab
+    - name: deploy containerlab topology
+      ansible.builtin.command: containerlab deploy -t lab_3-topology.clab.yaml
+      args:
+        chdir: /home/cisco/byo-clab-vxr-k8s/clab
 
 # Jalapeno sudo Tasks
 - name: jalapeno tasks

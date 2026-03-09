@@ -52,25 +52,25 @@ topology:
       startup-config: xrd-config/rome.cfg
       mgmt-ipv4: 172.20.6.107
 
-    # app-container-rome:
-    #   kind: linux
-    #   image: cl-rome-container:latest
-    #   mgmt-ipv4: 172.20.6.109
-    #   cap-add:
-    #     - NET_ADMIN
-    #     - NET_RAW
-    #   ports:
-    #     - 2222:22
+    app-container-rome:
+      kind: linux
+      image: iejalapeno/alpine-srv6:latest
+      mgmt-ipv4: 172.20.6.109
+      cap-add:
+        - NET_ADMIN
+        - NET_RAW
+      ports:
+        - 2222:22
 
-    # app-container-london:
-    #   kind: linux
-    #   image: cl-london-container:latest
-    #   mgmt-ipv4: 172.20.6.108
-    #   cap-add:
-    #     - NET_ADMIN
-    #     - NET_RAW
-    #   ports:
-    #     - 22222:22
+    app-container-london:
+      kind: linux
+      image: iejalapeno/alpine-srv6:latest
+      mgmt-ipv4: 172.20.6.108
+      cap-add:
+        - NET_ADMIN
+        - NET_RAW
+      ports:
+        - 22222:22
 
 # London DC SONiC Network
     sonic-leaf-00:
@@ -104,20 +104,21 @@ topology:
       image: sonic-vpp-ua:latest
       mgmt-ipv4: 172.20.6.194
 
-    london-vm-00-fe:
-      kind: bridge
-    london-vm-01-fe:
-      kind: bridge
-    london-vm-02-fe:
-      kind: bridge
+    # London Kind cluster
+    london-kind-node-00:
+      kind: linux
+      image: custom-kind-node:v1.28.0
+      mgmt-ipv4: 172.20.6.195
 
-    london-vm-00-be:
-      kind: bridge
-    london-vm-01-be:
-      kind: bridge
-    london-vm-02-be:
-      kind: bridge
+    london-kind-node-01:
+      kind: linux
+      image: custom-kind-node:v1.28.0
+      mgmt-ipv4: 172.20.6.196
 
+    london-kind-node-02:
+      kind: linux
+      image: custom-kind-node:v1.28.0
+      mgmt-ipv4: 172.20.6.197
 
   links:
 
@@ -148,14 +149,14 @@ topology:
 
 
     # London DC SONiC Network Links to London VMs
-    - endpoints: ["sonic-leaf-00:eth5", "london-vm-00-be:sonic-leaf00-eth5"]
-    - endpoints: ["sonic-leaf-01:eth5", "london-vm-01-be:sonic-leaf01-eth5"]
-    - endpoints: ["sonic-leaf-02:eth5", "london-vm-02-be:sonic-leaf02-eth5"]
+    - endpoints: ["sonic-leaf-00:eth5", "london-kind-node-00:eth2"]
+    - endpoints: ["sonic-leaf-01:eth5", "london-kind-node-01:eth2"]
+    - endpoints: ["sonic-leaf-02:eth5", "london-kind-node-02:eth2"]
 
 
     # London DC SONiC  Front End Network Links between London VMs (bridges) and XRd
-    - endpoints: ["xrd-london:Gi0-0-0-3", "london-vm-00-fe:xrd-london:Gi0-0-0-3"]
-    - endpoints: ["xrd-london:Gi0-0-0-4", "london-vm-01-fe:xrd-london:Gi0-0-0-4"]
-    - endpoints: ["xrd-london:Gi0-0-0-5", "london-vm-02-fe:xrd-london:Gi0-0-0-5"]
+    - endpoints: ["xrd-london:Gi0-0-0-3", "london-kind-node-00:eth1"]
+    - endpoints: ["xrd-london:Gi0-0-0-4", "london-kind-node-01:eth1"]
+    - endpoints: ["xrd-london:Gi0-0-0-5", "london-kind-node-02:eth1"]
 
 
