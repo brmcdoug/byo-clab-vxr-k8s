@@ -29,7 +29,12 @@ sudo add-apt-repository --yes --update ppa:ansible/ansible
 sudo apt install ansible
 ```
 
-4. Run Ansible *`vms-playbook`*
+4. Clone this repo
+```
+git clone https://github.com/brmcdoug/byo-clab-vxr-k8s.git
+```
+
+5. Run Ansible *`vms-playbook`*
 ```
 cd topology-host-vms/ansible/
 ansible-playbook -i hosts vms-playbook.yaml -e "ansible_user=cisco ansible_ssh_pass=cisco123 ansible_sudo_pass=cisco123" -vv
@@ -41,12 +46,12 @@ On the *`topology-host`* the script will install containerlab and the clab fork 
 
 On the *`jalapeno`* VM the script will install Docker, Kind, and Helm. It will launch a Kind cluster and run the helm chart to install Jalapeno on the cluster.
 
-5. Verify Containerlab on *`topology-host`*
+6. Verify Containerlab on *`topology-host`*
 ```
 clab version
 ```
 
-6. ssh to the *`jalapeno`* VM and verify Kind cluster and Jalapeno install:
+7. ssh to the *`jalapeno`* VM and verify Kind cluster and Jalapeno install:
 ```
 kubectl get nodes
 kubectl get pods -A
@@ -54,11 +59,11 @@ kubectl get pods -A
 
 Expected output should include several pods in the *`jalapeno`* namespace
    
-7. Install VXR (contact Cisco account team for image download access): 
+8. Install VXR (contact Cisco account team for image download access): 
 
    https://www.cisco.com/c/en/us/td/docs/iosxr/cisco8000-emulator/cisco8000-hardware-emulator-installation-guide.html
 
-8. untar the VXR package
+9. untar the VXR package
 ```
 tar -xvf 8000-emulator-eft16.0.tar
 ```
@@ -68,7 +73,7 @@ And the sonic package if you have it
 tar -xvf 8000-sonic-eft16.0.tar 
 ```
 
-9. cd into the 8000-eft scripts directory and run the Ubuntu install script
+10. cd into the 8000-eft scripts directory and run the Ubuntu install script
 ```
 cd 8000-eft16.0/scripts/
 
@@ -76,7 +81,7 @@ sudo ./ubuntuServerManualSetup.sh
 ```
 
 
-10. Download/Acquire XRd image(s) - choose XRd Control Plane option: 
+11. Download/Acquire XRd image(s) - choose XRd Control Plane option: 
 
    https://www.cisco.com/c/en/us/support/routers/ios-xrd/series.html#~tab-downloads 
 

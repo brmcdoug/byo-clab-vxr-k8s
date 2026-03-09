@@ -93,6 +93,12 @@
     - name: install containerlab
       ansible.builtin.shell: "curl -sL https://containerlab.dev/setup | bash -s 'all'"
 
+    - name: add user cisco to docker group
+      ansible.builtin.user:
+        name: cisco
+        groups: docker
+        append: true
+
 # Topology Host non-sudo Tasks
 - name: topology-host non-sudo tasks
   hosts: localhost
