@@ -3,116 +3,116 @@
 # ansible-playbook -i hosts vms-playbook.yaml -e "ansible_user=cisco ansible_ssh_pass=cisco123 ansible_sudo_pass=cisco123" -vv
 
 # Host VMs Tasks
-- name: host-vms
-  hosts: host-vms
-  become: true
-  tasks:
+# - name: host-vms
+#   hosts: host-vms
+#   become: true
+#   tasks:
 
-    - name: set timezone
-      community.general.timezone:
-        name: America/Los_Angeles
+#     - name: set timezone
+#       community.general.timezone:
+#         name: America/Los_Angeles
 
-    - name: apt update
-      ansible.builtin.apt:
-        update_cache: true
-        cache_valid_time: 3600
+#     - name: apt update
+#       ansible.builtin.apt:
+#         update_cache: true
+#         cache_valid_time: 3600
 
-    - name: apt upgrade
-      ansible.builtin.apt:
-        upgrade: dist
-        update_cache: true
+#     - name: apt upgrade
+#       ansible.builtin.apt:
+#         upgrade: dist
+#         update_cache: true
 
-    - name: install docker prerequisites
-      ansible.builtin.apt:
-        name:
-          - ca-certificates
-          - curl
-          - gnupg
-        state: present
+#     - name: install docker prerequisites
+#       ansible.builtin.apt:
+#         name:
+#           - ca-certificates
+#           - curl
+#           - gnupg
+#         state: present
 
-    - name: add docker GPG key
-      ansible.builtin.shell: |
-        install -m 0755 -d /etc/apt/keyrings
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-        chmod a+r /etc/apt/keyrings/docker.asc
-      args:
-        creates: /etc/apt/keyrings/docker.asc
+#     - name: add docker GPG key
+#       ansible.builtin.shell: |
+#         install -m 0755 -d /etc/apt/keyrings
+#         curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+#         chmod a+r /etc/apt/keyrings/docker.asc
+#       args:
+#         creates: /etc/apt/keyrings/docker.asc
 
-    - name: add docker apt repository
-      ansible.builtin.shell: |
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
-        https://download.docker.com/linux/ubuntu \
-        $(. /etc/os-release && echo ${UBUNTU_CODENAME:-$VERSION_CODENAME}) stable" \
-        > /etc/apt/sources.list.d/docker.list
-      args:
-        creates: /etc/apt/sources.list.d/docker.list
+#     - name: add docker apt repository
+#       ansible.builtin.shell: |
+#         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+#         https://download.docker.com/linux/ubuntu \
+#         $(. /etc/os-release && echo ${UBUNTU_CODENAME:-$VERSION_CODENAME}) stable" \
+#         > /etc/apt/sources.list.d/docker.list
+#       args:
+#         creates: /etc/apt/sources.list.d/docker.list
 
-    - name: install docker
-      ansible.builtin.apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-buildx-plugin
-          - docker-compose-plugin
-        state: present
-        update_cache: true
+#     - name: install docker
+#       ansible.builtin.apt:
+#         name:
+#           - docker-ce
+#           - docker-ce-cli
+#           - containerd.io
+#           - docker-buildx-plugin
+#           - docker-compose-plugin
+#         state: present
+#         update_cache: true
 
-    - name: add user to docker group
-      ansible.builtin.user:
-        name: cisco
-        groups: docker
-        append: true
+#     - name: add user to docker group
+#       ansible.builtin.user:
+#         name: cisco
+#         groups: docker
+#         append: true
 
-    - name: reset ssh connection for group change
-      ansible.builtin.meta: reset_connection
+#     - name: reset ssh connection for group change
+#       ansible.builtin.meta: reset_connection
 
-    - name: ensure docker is running
-      ansible.builtin.systemd:
-        name: docker
-        state: started
-        enabled: true
+#     - name: ensure docker is running
+#       ansible.builtin.systemd:
+#         name: docker
+#         state: started
+#         enabled: true
 
-# Topology Host sudo Tasks
-- name: topology-host tasks
-  hosts: localhost
-  become: true
-  tasks:
+# # Topology Host sudo Tasks
+# - name: topology-host tasks
+#   hosts: localhost
+#   become: true
+#   tasks:
 
-    - name: set hostname
-      ansible.builtin.hostname:
-        name: topology-host
+#     - name: set hostname
+#       ansible.builtin.hostname:
+#         name: topology-host
 
-    - name: update /etc/hosts with hostname
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        regexp: '^127\.0\.1\.1'
-        line: "127.0.1.1 topology-host"
-        state: present
+#     - name: update /etc/hosts with hostname
+#       ansible.builtin.lineinfile:
+#         path: /etc/hosts
+#         regexp: '^127\.0\.1\.1'
+#         line: "127.0.1.1 topology-host"
+#         state: present
 
-    - name: install containerlab
-      ansible.builtin.shell: "curl -sL https://containerlab.dev/setup | bash -s 'all'"
+#     - name: install containerlab
+#       ansible.builtin.shell: "curl -sL https://containerlab.dev/setup | bash -s 'all'"
 
-    - name: pull sonic-vpp docker image
-      ansible.builtin.command: docker pull bmcdougall/sonic-vpp-ua:latest
+#     - name: pull sonic-vpp docker image
+#       ansible.builtin.command: docker pull bmcdougall/sonic-vpp-ua:latest
 
-    - name: tag sonic-vpp image
-      ansible.builtin.command: docker tag bmcdougall/sonic-vpp-ua:latest sonic-vpp-ua:latest
+#     - name: tag sonic-vpp image
+#       ansible.builtin.command: docker tag bmcdougall/sonic-vpp-ua:latest sonic-vpp-ua:latest
 
-    - name: pull alping-srv6 image
-      ansible.builtin.command: docker pull iejalapeno/alpine-srv6:1.0
+#     - name: pull alping-srv6 image
+#       ansible.builtin.command: docker pull iejalapeno/alpine-srv6:1.0
 
-    - name: create custom kind node image
-      ansible.builtin.command: docker build -t custom-kind-node:v1.28.0 .
-      args:
-        chdir: /home/cisco/byo-clab-vxr-k8s/topology-host-vms/kind-cluster
+#     - name: create custom kind node image
+#       ansible.builtin.command: docker build -t custom-kind-node:v1.28.0 .
+#       args:
+#         chdir: /home/cisco/byo-clab-vxr-k8s/topology-host-vms/kind-cluster
 
-    - name: display docker images
-      ansible.builtin.command: docker image ls
-      register: docker_images
+#     - name: display docker images
+#       ansible.builtin.command: docker image ls
+#       register: docker_images
 
-    - name: show docker images
-      ansible.builtin.debug:
+#     - name: show docker images
+#       ansible.builtin.debug:
 
 # Topology Host non-sudo Tasks
 - name: topology-host non-sudo tasks
@@ -128,7 +128,6 @@
       ansible.builtin.git:
         repo: https://github.com/cisco-asp-web/LTRSPG-2212.git
         dest: /home/cisco/LTRSPG-2212
-        var: docker_images.stdout_lines
 
     - name: deploy containerlab topology
       ansible.builtin.command: containerlab deploy -t lab_3-topology.clab.yaml
